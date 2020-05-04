@@ -4,8 +4,9 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torchvision.transforms as transforms
 from data_aug.gaussian_blur import GaussianBlur
 from torchvision import datasets
-
+from provided_code.data_helper import UnlabeledDataset
 np.random.seed(0)
+
 
 
 class DataSetWrapper(object):
@@ -57,6 +58,21 @@ class DataSetWrapper(object):
                                   num_workers=self.num_workers, drop_last=True)
         return train_loader, valid_loader
 
+class SSL_DataSetWrapper(DataSetWrapper):
+
+    def __init__(self,batch_size,num_workers, valid_size, input_shape, s):
+        super().__init__(batch_size,num_workers,valid_size,input_shape,s)
+
+    def get_data_loaders(self):
+        data_augment = self._get_simclr_pipeline_transform()
+
+        unlabeled_scene_index = np.arange(106)
+        train_dataset= UnlabeledDataset(image_folder='/scratch/km3888/data',scene_index=unlabeled_scene_index,
+                                        first_dim='image',transform=SimCLRDataTransform(data_augment))
+
+
+        train_loader, valid_loader = self.get_train_validation_data_loaders(train_dataset)
+        return train_loader, valid_loader
 
 class SimCLRDataTransform(object):
     def __init__(self, transform):
